@@ -1,0 +1,88 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'checkstyle'
+apply plugin: 'findbugs'
+
+def defaultEncoding = 'UTF-8'
+tasks.withType(AbstractCompile) each { it.options.encoding = defaultEncoding }
+tasks.withType(GroovyCompile) each { it.groovyOptions.encoding = defaultEncoding }
+javadoc { options.encoding = defaultEncoding }
+
+task wrapper(type: Wrapper) { gradleVersion = '1.11' }
+
+sourceCompatibility = jdkVersion
+targetCompatibility = jdkVersion
+
+eclipse.project {
+    name project.name
+    natures "org.springsource.ide.eclipse.gradle.core.nature"
+    natures "net.sf.eclipsecs.core.CheckstyleNature"
+    buildCommand "net.sf.eclipsecs.core.CheckstyleBuilder"
+    natures "edu.umd.cs.findbugs.plugin.eclipse.findbugsNature"
+    buildCommand "edu.umd.cs.findbugs.plugin.eclipse.findbugsBuilder"
+}
+tasks.all {
+    if(it.name.contains('eclipseJdt')) {
+        it.enabled = false
+    }
+}
+tasks.all {
+    if(it.name.contains('cleanEclipseJdt')) {
+        it.enabled = false
+    }
+}
+
+sourceSets.main.java.srcDirs 'src/main/config'
+sourceSets.main.resources.srcDirs 'src/main/java'
+
+dependencies {
+    compile fileTree(dir: 'libs/compile', include: '**/*.jar', exclude: '**/*-sources.jar')
+    runtime fileTree(dir: 'libs/runtime', include: '**/*.jar', exclude: '**/*-sources.jar')
+    testCompile fileTree(dir: 'libs/testCompile', include: '**/*.jar', exclude: '**/*-sources.jar')
+}
+jar {
+    manifest {
+        attributes(
+                "Implementation-Title"      : project.name,
+                "Implementation-Version"    : version
+                )
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+
+    manifest {
+        attributes(
+                "Implementation-Title"      : project.name,
+                "Implementation-Version"    : version
+                )
+    }
+}
+artifacts { archives sourcesJar }
+
+findbugs {
+    excludeFilter = new File(confDir, "findbugs-ignorefilter.xml")
+}
+checkstyle  {
+    configFile = new File(confDir,"CheckStyle.xml")
+    configProperties.confDir = confDir
+}
+
+[
+    test,
+    checkstyleMain,
+    checkstyleTest,
+    findbugsMain,
+    findbugsTest
+]*.ignoreFailures = true
+
+repositories {  mavenCentral()   }
+eclipse { pathVariables 'GRADLE_USER_HOME': gradle.gradleUserHomeDir }
+
+dependencies {
+    testCompile 'junit:junit:4.+'
+    testCompile 'junit-addons:junit-addons:1.4'
+    testCompile 'mockit:mockit:0.999.4'
+}

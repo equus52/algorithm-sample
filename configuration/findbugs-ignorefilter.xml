@@ -1,0 +1,11 @@
+<FindBugsFilter>
+
+  <Match classregex=".*Test.*" />
+  <Match classregex=".*Example" />
+  <Match classregex=".*Criteria" />
+
+  <!-- violations -->
+  <!--
+    <Match classregex=".*"> <BugCode name="XYZ" /> </Match>
+  -->
+</FindBugsFilter>
