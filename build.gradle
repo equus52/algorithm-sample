@@ -62,12 +62,13 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 }
 artifacts { archives sourcesJar }
 
+def configDirFile = new File(project.projectDir, confDir)
 findbugs {
-    excludeFilter = new File(confDir, "findbugs-ignorefilter.xml")
+    excludeFilter = new File(configDirFile, "findbugs-ignorefilter.xml")
 }
 checkstyle  {
-    configFile = new File(confDir,"CheckStyle.xml")
-    configProperties.confDir = confDir
+    configFile = new File(configDirFile,"CheckStyle.xml")
+    configProperties.confDir = configDirFile
 }
 
 [
