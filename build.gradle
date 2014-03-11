@@ -40,6 +40,11 @@ dependencies {
     runtime fileTree(dir: 'libs/runtime', include: '**/*.jar', exclude: '**/*-sources.jar')
     testCompile fileTree(dir: 'libs/testCompile', include: '**/*.jar', exclude: '**/*-sources.jar')
 }
+
+test {
+    maxParallelForks 10
+}
+
 jar {
     manifest {
         attributes(
