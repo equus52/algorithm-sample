@@ -88,6 +88,8 @@ repositories {  mavenCentral()   }
 eclipse { pathVariables 'GRADLE_USER_HOME': gradle.gradleUserHomeDir }
 
 dependencies {
+    compile 'com.google.code.findbugs:jsr305:2.0.1'
+    
     testCompile 'junit:junit:4.+'
     testCompile 'junit-addons:junit-addons:1.4'
     testCompile 'mockit:mockit:0.999.4'
