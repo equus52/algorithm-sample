@@ -1,6 +1,7 @@
 package equus.independent.data;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -40,7 +41,11 @@ public final class LinkGroupBuilder<K> {
         }
     }
 
-    public Collection<Set<K>> build() {
-        return sets.values();
+    public Collection<Collection<K>> build() {
+        Collection<Collection<K>> collection = new HashSet<>();
+        for (Set<K> set : sets.values()) {
+            collection.add(Collections.unmodifiableCollection(set));
+        }
+        return Collections.unmodifiableCollection(collection);
     }
 }
