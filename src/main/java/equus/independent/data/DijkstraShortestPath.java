@@ -15,7 +15,7 @@ import equus.independent.util.Function;
 
 public class DijkstraShortestPath<V, E> {
 
-    private final UndirectedGraph<V, E> graph;
+    private final Graph<V, E> graph;
 
     private final Function<E, ? extends Number> weightProvider;
 
@@ -29,8 +29,18 @@ public class DijkstraShortestPath<V, E> {
 
     private static final int DEFAULT_MAX_TARGETS = Integer.MAX_VALUE;
 
-    public DijkstraShortestPath(UndirectedGraph<V, E> graph, Function<E, ? extends Number> weightProvider,
-                    double maxDistance, int maxTargets) {
+    private static <E> Function<E, ? extends Number> getNoWeightProvider() {
+        return new Function<E, Integer>() {
+
+            @Override
+            public Integer apply(E input) {
+                return 1;
+            }
+        };
+    }
+
+    public DijkstraShortestPath(Graph<V, E> graph, Function<E, ? extends Number> weightProvider, double maxDistance,
+                    int maxTargets) {
         this.graph = graph;
         this.weightProvider = weightProvider;
         this.maxDistance = maxDistance;
@@ -38,51 +48,53 @@ public class DijkstraShortestPath<V, E> {
         this.sourceMap = new HashMap<V, SourcePathData>();
     }
 
-    public DijkstraShortestPath(UndirectedGraph<V, E> graph, Function<E, ? extends Number> weightProvider) {
+    public DijkstraShortestPath(Graph<V, E> graph) {
+        this(graph, DijkstraShortestPath.<E> getNoWeightProvider(), DEFAULT_MAX_DISTANCE, DEFAULT_MAX_TARGETS);
+    }
+
+    public DijkstraShortestPath(Graph<V, E> graph, Function<E, ? extends Number> weightProvider) {
         this(graph, weightProvider, DEFAULT_MAX_DISTANCE, DEFAULT_MAX_TARGETS);
     }
 
-    public DijkstraShortestPath(UndirectedGraph<V, E> graph, Function<E, ? extends Number> weightProvider,
-                    double maxTargets) {
+    public DijkstraShortestPath(Graph<V, E> graph, Function<E, ? extends Number> weightProvider, double maxTargets) {
         this(graph, weightProvider, maxTargets, DEFAULT_MAX_TARGETS);
     }
 
-    public DijkstraShortestPath(UndirectedGraph<V, E> graph, Function<E, ? extends Number> weightProvider,
-                    int maxTargets) {
+    public DijkstraShortestPath(Graph<V, E> graph, Function<E, ? extends Number> weightProvider, int maxTargets) {
         this(graph, weightProvider, DEFAULT_MAX_DISTANCE, maxTargets);
+    }
+
+    public Double getShortestDistance(V source, V target) {
+        if (!graph.containsVertex(source)) {
+            throw new IllegalArgumentException();
+        }
+        if (!graph.containsVertex(target)) {
+            throw new IllegalArgumentException();
+        }
+
+        calculateShortestPath(source, target);
+        return getSourcePathData(source).getDistance(target);
     }
 
     public List<E> getShortestPath(V source, V target) {
         if (!graph.containsVertex(source)) {
-            throw new IllegalArgumentException("Specified source vertex " + source + " is not part of graph " + graph);
+            throw new IllegalArgumentException();
         }
         if (!graph.containsVertex(target)) {
-            throw new IllegalArgumentException("Specified target vertex " + target + " is not part of graph " + graph);
+            throw new IllegalArgumentException();
         }
 
         calculateShortestPath(source, target);
-        Map<V, E> incomingEdges = getSourcePathData(source).incomingEdges;
-
-        LinkedList<E> path = new LinkedList<E>();
-        if (incomingEdges.isEmpty() || incomingEdges.get(target) == null) {
-            return path;
-        }
-        V current = target;
-        while (!current.equals(source)) {
-            E incoming = incomingEdges.get(current);
-            path.addFirst(incoming);
-            current = graph.getOpposite(current, incoming);
-        }
-        return path;
+        return getSourcePathData(source).getPath(target);
     }
 
-    private void calculateShortestPath(V source, V target) {
+    public void calculateShortestPath(V source, V target) {
         Set<V> targets = new HashSet<V>();
         targets.add(target);
         calculateShortestPath(source, targets);
     }
 
-    private void calculateShortestPath(V source, Collection<V> targets) {
+    public void calculateShortestPath(V source, Collection<V> targets) {
         SourcePathData data = getSourcePathData(source);
         if (data.isCalculatedAll()) {
             return;
@@ -110,7 +122,7 @@ public class DijkstraShortestPath<V, E> {
                 break;
             }
 
-            for (E toCheckEdge : graph.getOutEdges(fixedVertex)) {
+            for (E toCheckEdge : graph.getOutgoingEdges(fixedVertex)) {
                 for (V toCheckVertex : graph.getEndpoints(toCheckEdge).getCollection()) {
                     if (data.isFixed(toCheckVertex)) {
                         continue;
@@ -123,7 +135,7 @@ public class DijkstraShortestPath<V, E> {
                     if (!data.estimatedDistances.containsKey(toCheckVertex)) {
                         data.createRecord(toCheckVertex, toCheckEdge, newDistance);
                     } else {
-                        double estimatedDistance = ((Double) data.estimatedDistances.get(toCheckVertex)).doubleValue();
+                        double estimatedDistance = data.estimatedDistances.get(toCheckVertex).doubleValue();
                         if (newDistance < estimatedDistance) {
                             data.update(toCheckVertex, toCheckEdge, newDistance);
                         }
@@ -134,7 +146,7 @@ public class DijkstraShortestPath<V, E> {
         }
     }
 
-    private SourcePathData getSourcePathData(V source) {
+    public SourcePathData getSourcePathData(V source) {
         SourcePathData data = sourceMap.get(source);
         if (data == null) {
             data = new SourcePathData(source);
@@ -147,9 +159,9 @@ public class DijkstraShortestPath<V, E> {
 
         final V source;
 
-        final LinkedHashMap<V, Number> calculatedDistances;
+        final LinkedHashMap<V, Double> calculatedDistances;
 
-        final Map<V, Number> estimatedDistances;
+        final Map<V, Double> estimatedDistances;
 
         final Map<V, E> tentativeIncomingEdges;
 
@@ -161,9 +173,9 @@ public class DijkstraShortestPath<V, E> {
 
         SourcePathData(V source) {
             this.source = source;
-            this.calculatedDistances = new LinkedHashMap<V, Number>();
+            this.calculatedDistances = new LinkedHashMap<V, Double>();
             this.incomingEdges = new LinkedHashMap<V, E>();
-            this.estimatedDistances = new HashMap<V, Number>();
+            this.estimatedDistances = new HashMap<V, Double>();
             this.tentativeIncomingEdges = new HashMap<V, E>();
             this.unknownVerticesPriorityQueue = new PriorityQueue<V>(graph.getVertexCount(), new VertexComparator(
                             estimatedDistances));
@@ -186,17 +198,17 @@ public class DijkstraShortestPath<V, E> {
         }
 
         Tuple<V, Number> getNextVertex() {
-            V v = unknownVerticesPriorityQueue.remove();
-            Double dist = (Double) estimatedDistances.remove(v);
-            calculatedLongestDistance = dist;
+            V fixedVertex = unknownVerticesPriorityQueue.remove();
+            Double fixedVertexDistance = estimatedDistances.remove(fixedVertex);
+            calculatedLongestDistance = fixedVertexDistance;
             if (isReachedMaxDistance()) {
-                restoreVertex(v, dist);
+                restoreVertex(fixedVertex, fixedVertexDistance);
                 return null;
             }
-            calculatedDistances.put(v, dist);
-            E incoming = tentativeIncomingEdges.remove(v);
-            incomingEdges.put(v, incoming);
-            return new Tuple<V, Number>(v, dist);
+            calculatedDistances.put(fixedVertex, fixedVertexDistance);
+            E incomingEdge = tentativeIncomingEdges.remove(fixedVertex);
+            incomingEdges.put(fixedVertex, incomingEdge);
+            return new Tuple<V, Number>(fixedVertex, fixedVertexDistance);
         }
 
         private boolean isReachedMaxDistance() {
@@ -230,17 +242,35 @@ public class DijkstraShortestPath<V, E> {
             }
         }
 
+        LinkedList<E> getPath(V target) {
+            LinkedList<E> path = new LinkedList<E>();
+            if (incomingEdges.isEmpty() || incomingEdges.get(target) == null) {
+                return path;
+            }
+            V current = target;
+            while (!current.equals(source)) {
+                E incoming = incomingEdges.get(current);
+                path.addFirst(incoming);
+                current = graph.getOpposite(current, incoming);
+            }
+            return path;
+        }
+
+        Double getDistance(V target) {
+            return calculatedDistances.get(target);
+        }
+
         private class VertexComparator implements Comparator<V> {
 
-            private final Map<V, Number> distances;
+            private final Map<V, Double> distances;
 
-            protected VertexComparator(Map<V, Number> distances) {
+            protected VertexComparator(Map<V, Double> distances) {
                 this.distances = distances;
             }
 
             @Override
             public int compare(V o1, V o2) {
-                return ((Double) distances.get(o1)).compareTo((Double) distances.get(o2));
+                return distances.get(o1).compareTo(distances.get(o2));
             }
         }
     }

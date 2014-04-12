@@ -7,9 +7,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-// TODO:independent-java create DirectedGraph
 @SuppressWarnings("serial")
-public class UndirectedGraph<V, E> implements Serializable {
+public class UndirectedGraph<V, E> implements Graph<V, E>, Serializable {
 
     private final Map<V, Map<V, E>> vertices;
 
@@ -28,11 +27,13 @@ public class UndirectedGraph<V, E> implements Serializable {
         return Collections.unmodifiableCollection(vertices.get(vertex).values());
     }
 
-    public Collection<E> getInEdges(V vertex) {
+    @Override
+    public Collection<E> getIncomingEdges(V vertex) {
         return getIncidentEdges(vertex);
     }
 
-    public Collection<E> getOutEdges(V vertex) {
+    @Override
+    public Collection<E> getOutgoingEdges(V vertex) {
         return getIncidentEdges(vertex);
     }
 
@@ -41,13 +42,15 @@ public class UndirectedGraph<V, E> implements Serializable {
         if (!containsVertex(vertex)) {
             return Collections.EMPTY_LIST;
         }
-        return Collections.unmodifiableCollection(vertices.get(vertex).keySet());
+        return vertices.get(vertex).keySet();
     }
 
+    @Override
     public Pair<V> getEndpoints(E edge) {
         return edges.get(edge);
     }
 
+    @Override
     public V getOpposite(V vertex, E edge) {
         Pair<V> incident = getEndpoints(edge);
         V first = incident.getFirst();
@@ -57,10 +60,11 @@ public class UndirectedGraph<V, E> implements Serializable {
         } else if (vertex.equals(second)) {
             return first;
         } else {
-            throw new IllegalArgumentException(vertex + " is not incident to " + edge + " in this graph");
+            throw new IllegalArgumentException();
         }
     }
 
+    @Override
     public boolean containsVertex(V vertex) {
         return vertices.containsKey(vertex);
     }
@@ -86,8 +90,7 @@ public class UndirectedGraph<V, E> implements Serializable {
         if (containsEdge(edge)) {
             Pair<V> existingEndpoints = getEndpoints(edge);
             if (!existingEndpoints.equals(newEndpoints)) {
-                throw new IllegalArgumentException("edge " + edge + " already exists in this graph with endpoints "
-                                + existingEndpoints + " and cannot be added with endpoints " + newEndpoints);
+                throw new IllegalArgumentException();
             } else {
                 return false;
             }
@@ -139,6 +142,7 @@ public class UndirectedGraph<V, E> implements Serializable {
         return true;
     }
 
+    @Override
     public int getVertexCount() {
         return vertices.size();
     }
