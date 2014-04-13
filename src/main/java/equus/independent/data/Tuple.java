@@ -18,4 +18,44 @@ public class Tuple<T1, T2> {
     public T2 getValue2() {
         return value2;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((value1 == null) ? 0 : value1.hashCode());
+        result = prime * result + ((value2 == null) ? 0 : value2.hashCode());
+        return result;
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        Tuple other = (Tuple) obj;
+        if (value1 == null) {
+            if (other.value1 != null) {
+                return false;
+            }
+        } else if (!value1.equals(other.value1)) {
+            return false;
+        }
+        if (value2 == null) {
+            if (other.value2 != null) {
+                return false;
+            }
+        } else if (!value2.equals(other.value2)) {
+            return false;
+        }
+        return true;
+    }
+
 }
